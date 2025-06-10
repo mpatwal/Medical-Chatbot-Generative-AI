@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HealthBot - Medical Assistant</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .chat-container {
+        width: 100%;
+        max-width: 800px;
+        height: 90vh;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: slideUp 0.6s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .chat-header {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        padding: 25px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .chat-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          45deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        animation: shimmer 3s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        }
+        100% {
+          transform: translateX(100%) translateY(100%) rotate(45deg);
+        }
+      }
+
+      .chat-header h1 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .chat-header p {
+        font-size: 1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 1;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: #4caf50;
+        border-radius: 50%;
+        margin-left: 10px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+        background: #f8f9fa;
+        scrollbar-width: thin;
+        scrollbar-color: #4caf50 #f1f1f1;
+      }
+
+      .chat-messages::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      .chat-messages::-webkit-scrollbar-thumb {
+        background: #4caf50;
+        border-radius: 10px;
+      }
+
+      .message {
+        margin-bottom: 20px;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        text-align: right;
+      }
+
+      .message.bot {
+        text-align: left;
+      }
+
+      .message-bubble {
+        display: inline-block;
+        max-width: 70%;
+        padding: 15px 20px;
+        border-radius: 20px;
+        word-wrap: break-word;
+        position: relative;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .message.user .message-bubble {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        border-bottom-right-radius: 5px;
+      }
+
+      .message.bot .message-bubble {
+        background: white;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 5px;
+      }
+
+      .message-time {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 5px;
+        opacity: 0.7;
+      }
+
+      .typing-indicator {
+        display: none;
+        text-align: left;
+        margin-bottom: 20px;
+      }
+
+      .typing-indicator .message-bubble {
+        background: white;
+        border: 1px solid #e0e0e0;
+        padding: 20px;
+      }
+
+      .typing-dots {
+        display: inline-block;
+      }
+
+      .typing-dots span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4caf50;
+        margin: 0 2px;
+        animation: typing 1.4s infinite ease-in-out;
+      }
+
+      .typing-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      .typing-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+
+      @keyframes typing {
+        0%,
+        80%,
+        100% {
+          transform: scale(0.8);
+          opacity: 0.5;
+        }
+        40% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .chat-input {
+        padding: 25px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .input-container {
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+      }
+
+      .input-field {
+        flex: 1;
+        min-height: 50px;
+        max-height: 120px;
+        padding: 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        font-size: 1rem;
+        resize: none;
+        outline: none;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      }
+
+      .input-field:focus {
+        border-color: #4caf50;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+      }
+
+      .send-button {
+        width: 50px;
+        height: 50px;
+        border: none;
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+      }
+
+      .send-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      .send-button:active {
+        transform: scale(0.95);
+      }
+
+      .quick-suggestions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+
+      .suggestion-btn {
+        padding: 8px 16px;
+        background: #f0f8f0;
+        border: 1px solid #4caf50;
+        color: #4caf50;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .suggestion-btn:hover {
+        background: #4caf50;
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      .welcome-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+      }
+
+      .welcome-message h3 {
+        color: #4caf50;
+        margin-bottom: 15px;
+        font-size: 1.5rem;
+      }
+
+      .welcome-message p {
+        margin-bottom: 10px;
+        line-height: 1.6;
+      }
+
+      .medical-icon {
+        font-size: 3rem;
+        color: #4caf50;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .chat-container {
+          height: 95vh;
+          border-radius: 15px;
+        }
+
+        .chat-header h1 {
+          font-size: 1.5rem;
+        }
+
+        .message-bubble {
+          max-width: 85%;
+        }
+
+        .quick-suggestions {
+          flex-direction: column;
+        }
+      }
+
+      .disclaimer {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <h1>🏥 HealthBot</h1>
+        <p>Your AI Medical Assistant <span class="status-indicator"></span></p>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="disclaimer">
+          ⚠️ This is an AI assistant for informational purposes only. Always
+          consult with healthcare professionals for medical advice.
+        </div>
+
+        <div class="welcome-message">
+          <div class="medical-icon">🩺</div>
+          <h3>Welcome to HealthBot!</h3>
+          <p>I'm here to help answer your health-related questions.</p>
+          <p>
+            You can ask me about symptoms, medications, general health advice,
+            and more.
+          </p>
+          <p><strong>How can I assist you today?</strong></p>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="message-bubble">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          HealthBot is typing...
+        </div>
+      </div>
+
+      <div class="chat-input">
+        <div class="quick-suggestions">
+          <button
+            class="suggestion-btn"
+            onclick="sendSuggestion('What are the symptoms of flu?')"
+          >
+            Flu Symptoms
+          </button>
+          <button
+            class="suggestion-btn"
+            onclick="sendSuggestion('How to manage headaches?')"
+          >
+            Headache Relief
+          </button>
+          <button
+            class="suggestion-btn"
+            onclick="sendSuggestion('Healthy diet tips')"
+          >
+            Diet Tips
+          </button>
+          <button
+            class="suggestion-btn"
+            onclick="sendSuggestion('Exercise recommendations')"
+          >
+            Exercise
+          </button>
+        </div>
+
+        <div class="input-container">
+          <textarea
+            id="messageInput"
+            class="input-field"
+            placeholder="Type your health question here..."
+            rows="1"
+            onkeypress="handleKeyPress(event)"
+            oninput="adjustTextareaHeight(this)"
+          ></textarea>
+          <button class="send-button" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const chatMessages = document.getElementById("chatMessages");
+      const messageInput = document.getElementById("messageInput");
+      const typingIndicator = document.getElementById("typingIndicator");
+
+      // Sample medical responses
+      const medicalResponses = {
+        flu: "Common flu symptoms include fever, body aches, fatigue, cough, and runny nose. Rest, hydration, and over-the-counter medications can help. See a doctor if symptoms worsen or persist.",
+        headache:
+          "For headaches, try rest in a dark room, staying hydrated, gentle neck stretches, and over-the-counter pain relievers. If headaches are frequent or severe, consult a healthcare provider.",
+        diet: "A healthy diet includes plenty of fruits, vegetables, whole grains, lean proteins, and adequate water. Limit processed foods, excess sugar, and saturated fats.",
+        exercise:
+          "Aim for 150 minutes of moderate exercise weekly. Include cardio, strength training, and flexibility exercises. Start slowly and gradually increase intensity.",
+        default:
+          "Thank you for your question. For specific medical concerns, I recommend consulting with a healthcare professional who can provide personalized advice based on your individual situation.",
+      };
+
+      function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message === "") return;
+
+        addMessage(message, "user");
+        messageInput.value = "";
+        adjustTextareaHeight(messageInput);
+
+        showTypingIndicator();
+
+        setTimeout(() => {
+          hideTypingIndicator();
+          const response = generateResponse(message);
+          addMessage(response, "bot");
+        }, 1500 + Math.random() * 1000);
+      }
+
+      function sendSuggestion(suggestion) {
+        messageInput.value = suggestion;
+        sendMessage();
+      }
+
+      function addMessage(text, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+
+        const currentTime = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        messageDiv.innerHTML = `
+                <div class="message-bubble">${text}</div>
+                <div class="message-time">${currentTime}</div>
+            `;
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function generateResponse(message) {
+        const lowerMessage = message.toLowerCase();
+
+        if (
+          lowerMessage.includes("flu") ||
+          lowerMessage.includes("fever") ||
+          lowerMessage.includes("cold")
+        ) {
+          return medicalResponses.flu;
+        } else if (
+          lowerMessage.includes("headache") ||
+          lowerMessage.includes("head pain")
+        ) {
+          return medicalResponses.headache;
+        } else if (
+          lowerMessage.includes("diet") ||
+          lowerMessage.includes("nutrition") ||
+          lowerMessage.includes("food")
+        ) {
+          return medicalResponses.diet;
+        } else if (
+          lowerMessage.includes("exercise") ||
+          lowerMessage.includes("workout") ||
+          lowerMessage.includes("fitness")
+        ) {
+          return medicalResponses.exercise;
+        } else {
+          return medicalResponses.default;
+        }
+      }
+
+      function showTypingIndicator() {
+        typingIndicator.style.display = "block";
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function hideTypingIndicator() {
+        typingIndicator.style.display = "none";
+      }
+
+      function handleKeyPress(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      }
+
+      function adjustTextareaHeight(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+      }
+
+      // Initialize
+      messageInput.focus();
+    </script>
+  </body>
+</html>
