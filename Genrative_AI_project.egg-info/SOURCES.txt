@@ -1,0 +1,5 @@
+setup.py
+Genrative_AI_project.egg-info/PKG-INFO
+Genrative_AI_project.egg-info/SOURCES.txt
+Genrative_AI_project.egg-info/dependency_links.txt
+Genrative_AI_project.egg-info/top_level.txt
